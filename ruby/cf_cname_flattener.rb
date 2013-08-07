@@ -4,7 +4,6 @@ require 'json'
 require 'net/https'
 require 'resolv'
 require 'logger'
-require 'bugsnag'
 require 'fileutils'
 
 class CfCnameFlattener
@@ -181,7 +180,6 @@ class CfCnameFlattener
   end
 
 end
-
 if __FILE__ == $0
   def with_bugsnag(&block)
     if CfCnameFlattener::BUGSNAG_API_KEY
@@ -191,6 +189,12 @@ if __FILE__ == $0
       end
 
       if defined?(Bugsnag)
+  begin
+    begin
+      require 'bugsnag'
+    rescue LoadError
+    end
+    if defined?(Bugsnag)
         Bugsnag.configure do |config|
           config.api_key = CfCnameFlattener::BUGSNAG_API_KEY
           config.use_ssl = true
