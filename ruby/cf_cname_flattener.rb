@@ -4,7 +4,6 @@ require 'json'
 require 'net/http'
 require 'socket'
 require 'logger'
-require 'bugsnag'
 require 'fileutils'
 
 class CfCnameFlattener
@@ -36,7 +35,7 @@ class CfCnameFlattener
     end
     prune_unused(do_not_touch, cf_records)
     record_activity
-  end 
+  end
 
   def get_new_ips
     resolve = Socket.getaddrinfo(CNAME, "http", nil, :STREAM)
@@ -112,20 +111,26 @@ class CfCnameFlattener
   end
 
   def record_activity
-    FileUtils.touch '/tmp/cname-flattener' 
+    FileUtils.touch '/tmp/cname-flattener'
   end
-
 end
 
-CfCnameFlattener.new().flatten
+if __FILE__ == $0
+  begin
+    begin
+      require 'bugsnag'
+    rescue LoadError
+    end
 
-Bugsnag.configure do |config|
-  config.api_key = "ccac972773b4f3ea02030a0d87a4775a"
-  config.use_ssl = true
-end
+    if defined?(Bugsnag)
+      Bugsnag.configure do |config|
+        config.api_key = "ccac972773b4f3ea02030a0d87a4775a"
+        config.use_ssl = true
+      end
+    end
 
-at_exit do
-  if $!
-    Bugsnag.notify($!)
+    CfCnameFlattener.new.flatten
+  rescue Exception => e
+    Bugsnag.notify(e) if defined?(Bugsnag)
   end
 end
